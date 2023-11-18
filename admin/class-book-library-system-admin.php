@@ -212,7 +212,7 @@ class Book_Library_System_Admin {
    
         flush_rewrite_rules();
 
-	}
+	} 
 
 	//Create custom post type book custom field
 	public function bls_add_book_custom_fields() {

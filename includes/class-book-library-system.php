@@ -186,7 +186,7 @@ class Book_Library_System {
 
 		//Single post template apply
 		$this->loader->add_action( 'single_template', $plugin_public, 'bls_book_post_type_template' );
-
+  
 	}
 
 	/**

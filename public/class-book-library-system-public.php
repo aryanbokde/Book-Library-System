@@ -242,7 +242,7 @@ class Book_Library_System_Public {
 			} else {
 				echo '<p>No results found</p>';
 			}			
-			wp_die();
+			wp_die();  
 
         }elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $form_data = $_POST['form_data'];

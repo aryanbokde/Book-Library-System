@@ -33,15 +33,8 @@ jQuery(document).ready(function ($) {
         },
         success: function (response) {
             $('#book-search-results').html(response);
-            // if (response.length > 0) {
-            //     var container = $('#custom-posts-container');
-            //     response.forEach(function (post) {
-            //         container.append('<div class="custom-post"><h2>' + post.title + '</h2><p>' + post.content + '</p></div>');
-            //     });
-            // }
         },
     });
-
 
     $('#book-search-form').submit(function (e) {
 
@@ -63,7 +56,7 @@ jQuery(document).ready(function ($) {
         return false;
     });
 
-});
+}); 
 
 
 
