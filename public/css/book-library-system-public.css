@@ -1,0 +1,74 @@
+/**
+ * All of the CSS for your public-facing functionality should be
+ * included in this file.
+ */
+
+
+ /* .slider-box {width: 90%; margin: 25px auto}
+label, input {border: none; display: inline-block; margin-right: -4px; vertical-align: top; width: 30%}
+input {width: 70%}
+.slider {margin: 25px 0} */
+
+
+#price-range-slider {
+    width: 80%;
+    margin: 20px;
+}
+
+#min-price, #max-price {
+    display: inline-block;
+    width: 50px;
+    text-align: center;
+}
+
+#book-search-results, #book-search-form, #book-search-form .book-table{
+    width: 100%;
+}
+
+#book-table {
+    padding-bottom: 20px;
+    border-bottom:3px solid rgb(5, 5, 5);
+}
+
+#book-table td {
+    padding: 10px;
+}
+#book-table td input[type=text], #book-table td input[type=number] {
+    padding: 5px;
+    width: 100%;
+}
+#book-table td input[type=submit] {
+    padding: 10px 30px;
+    background-color: #a9a909;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    box-shadow: 2px 2px 5px #8b8888;
+    cursor: pointer;
+}
+
+#book-search-results .table {
+    width: 100%;
+    margin-top: 15px;
+    border: 1px solid #a19e9e;
+}
+
+#book-search-results .table td{
+    border-bottom: 1px solid #a19e9e;
+    padding: 7px;
+}
+
+.book-post{
+    padding-top:50px;
+    padding-bottom:50px;
+}
+
+.taxonomy{
+    display: block;
+    width: 100%;
+    margin-bottom: 20px;
+}
+.taxonomy-list{
+    margin: 0 10px 0 0 !important;
+    display: inline-block;
+}
