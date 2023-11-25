@@ -161,902 +161,882 @@ class Book_Library_System_Public {
 
 	public function bls_book_search_ajax_handler() {
 
+		$args = array();
+		$pagination = "";
 		
-        if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-
+		if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+			$pagination = 'get-request';
+			$page = $_GET['form_data'];
 			$args = array(
-				'post_type'      => 'book',
-				'posts_per_page' => -1,
+				'post_type' => 'book',
+				'posts_per_page' => 2,
+				'paged' => $page,
 				'post_status' => 'publish',
-			);
+			);			
 
-            $query = new WP_Query($args);
+		}elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			
-			if ($query->have_posts()) { ?>
-				<table class="table table-hover">
-					<thead>
-						<tr>
-							<th scope="col">#</th>
-							<th scope="col">Title</th>
-							<th scope="col">Price</th>
-							<th scope="col">Author</th>
-							<th scope="col">Publisher</th>
-							<th scope="col">Rating</th>
-						</tr>
-					</thead>
-					<tbody>
-				<?php 
-				$counter = 1;
-				while ($query->have_posts()) {
-					$query->the_post();
+			$pagination = 'post-request';
+			$form_data = $_POST['form_data'];
+			parse_str($form_data, $form_array);
 
-					// Get custom field value
-					$price = get_post_meta(get_the_ID(), '_book_price', true);
-					$rating = get_post_meta(get_the_ID(), '_book_start_rating', true);
+			// Access individual form fields
+			$book_name = sanitize_text_field($form_array['book_search']);
+			$book_author = sanitize_text_field($form_array['book_author']);
+			$book_publisher = sanitize_text_field($form_array['book_publisher']);
+			$book_rating = sanitize_text_field($form_array['book_rating']);
+			$min_price = sanitize_text_field($form_array['min_price']);
+			$book_price = sanitize_text_field($form_array['max_price']);
+			$page = sanitize_text_field($form_array['page']);
 
-					// Get taxonomy terms (replace 'your_taxonomy' with your actual taxonomy name)
-					$auhtors = wp_get_post_terms(get_the_ID(), 'author', array('fields' => 'names'));
-					$publishers = wp_get_post_terms(get_the_ID(), 'publisher', array('fields' => 'names'));
-
-					
-					echo '<tr>';
-							echo '<td scope="row">' .$counter. '</td>';
-							echo '<td><a href="' . get_permalink() . '">' . get_the_title() . '</a></td>';
-							echo '<td>$'.$price.'</td>';
-							echo '<td>';
-							if ($auhtors && !is_wp_error($auhtors)) {							
-								$author_names = array();				
-								foreach ($auhtors as $auhtor) {
-									$author_names[] = $auhtor;
-								}				
-								$author_string = implode(', ', $author_names);				
-								echo $author_string;							
-							}
-							echo '</td>';
-							echo '<td>';
-							if ($publishers && !is_wp_error($publishers)) {							
-								$term_names = array();				
-								foreach ($publishers as $publisher) {
-									$term_names[] = $publisher;
-								}				
-								$taxonomy_string = implode(', ', $term_names);				
-								echo $taxonomy_string;							
-							}
-							echo '</td>';
-							echo '<td>';
-								if(!empty($rating)){
-									for ($i = 1; $i <= $rating; $i++) {
-										echo '<span style="margin-right:5px;"><i class="fas fa-star"></i></span>';
-									}
-								}
-							echo '</td>';
-					echo '</tr>';
-					
-					// Increment the counter
-					$counter++;
-				} ?>
-					</tbody>
-				</table>
-				<?php	
-
-			} else {
-				echo '<p>No results found</p>';
-			}			
-			wp_die();  
-
-        }elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $form_data = $_POST['form_data'];
-			if (!empty($form_data)) {
-
-				// Parse the query string into an array
-				parse_str($form_data, $form_array);
-				
-				// Access individual form fields
-				$book_name = sanitize_text_field($form_array['book_search']);
-				$book_author = sanitize_text_field($form_array['book_author']);
-				$book_publisher = sanitize_text_field($form_array['book_publisher']);
-				$book_rating = sanitize_text_field($form_array['book_rating']);
-				$min_price = sanitize_text_field($form_array['min_price']);
-				$book_price = sanitize_text_field($form_array['max_price']);
-				
-
-				//condition for 1 input box
-				if(!empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-					);
-				}
-
-				if(empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name', // Change field as needed (name, slug, term_id)
-								'terms'    => $book_author,
-							),
-						),
-					);
-				}
-
-				if(empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name', // Change field as needed (name, slug, term_id)
-								'terms'    => $book_publisher,
-							),
-						),
-					);
-				}
-
-				if(empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'meta_query'     => array(
-							array(
-								'key'   => '_book_start_rating',
-								'value' => $book_rating,
-							),
-						),
-					);
-				}
-
-				if(empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', // Replace 'field_name' with the actual custom field key
-								'value' => array( $min_price, $book_price ), // Set the minimum and maximum values
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),					
-						),
-					);
-				}
-
-				//condition for 2 input box
-				if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name', // Change field as needed (name, slug, term_id)
-								'terms'    => $book_author,
-							),
-						),
-					);
-				}
-
-				if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name', // Change field as needed (name, slug, term_id)
-								'terms'    => $book_publisher,
-							),
-						),
-					);
-				}
-
-				if(!empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'meta_query'     => array(
-							array(
-								'key'   => '_book_start_rating',
-								'value' => $book_rating,
-							),
-						),
-					);
-				}
-
-				if(!empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-						),
-					);
-				}
-				
-				//condition for 3 input box
-				if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							'relation' => 'AND',
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-					);
-					
-				}
-
-				if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key'   => '_book_start_rating',
-								'value' => $book_rating,
-							),
-						),
-					);			
-				}
-
-				if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-						),
-					);			
-				}
-
-				//condition for 4 input box
-				if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							'relation' => 'AND',
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key'   => '_book_start_rating',
-								'value' => $book_rating,
-							),
-						),
-					);
-					
-				}
-
-				if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							'relation' => 'AND',
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-						),
-					);
-					
-				}
-
-				//condition for 5 input box
-				if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							'relation' => 'AND',
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-						),
-					);
-					
-				}
-
-				//condition for 6 input box
-				if(empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-						),
-					);			
-				}
-
-				if(empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-						),
-					);
-					
-				}
-
-				if(empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-						),
-					);			
-				}
-
-				if(!empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-						),
-					);			
-				}
-
-				//condition for 7 input box
-				if(empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-						),
-					);
-					
-				}
-
-				if(empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-						),
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-						),
-					);
-					
-				}
-
-				if(!empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-						),
-					);
-					
-				}
-
-				//condition for 8 input box
-				if(empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							'relation' => 'AND',
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-						),
-					);
-					
-				}
-				
-				//condition for 9 input box
-				if(empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),					
-						),
-					);
-					
-				}
-
-				if(empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),					
-						),
-					);
-					
-				}
-
-				//condition for 10 input box
-				if(empty($book_name) && !empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							'relation' => 'AND',
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-					);
-					
-				}
-
-				// //condition for 11 input box
-				if(empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							'relation' => 'AND',
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-							
-						),
-					);			
-				}
-
-				if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-							
-						),
-					);
-					
-				}
-				
-				//condition for 12 input box
-				if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'author',
-								'field'    => 'name',
-								'terms'    => $book_author,
-							),
-						),
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							
-						),
-					);
-					
-				}
-
-				if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							
-						),
-					);
-					
-				}
-
-				if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
-					$args = array(
-						'post_type'      => 'book',
-						'posts_per_page' => -1,
-						's'              => $book_name,
-						'post_status' => 'publish',
-						'tax_query'      => array(
-							array(
-								'taxonomy' => 'publisher',
-								'field'    => 'name',
-								'terms'    => $book_publisher,
-							),
-						),
-						'meta_query'     => array(
-							'relation' => 'AND',
-							array(
-								'key'     => '_book_start_rating',
-								'value'   => $book_rating,
-							),
-							array(
-								'key' => '_book_price', 
-								'value' => array( $min_price, $book_price ),
-								'type' => 'NUMERIC',
-								'compare' => 'BETWEEN',
-							),
-							
-						),
-					);
-					
-				}
-
-				$query = new WP_Query($args);
-			
-				if ($query->have_posts()) { ?>
-					<table class="table table-hover">
-						<thead>
-							<tr>
-								<th scope="col">#</th>
-								<th scope="col">Title</th>
-								<th scope="col">Price</th>
-								<th scope="col">Author</th>
-								<th scope="col">Publisher</th>
-								<th scope="col">Rating</th>
-							</tr>
-						</thead>
-						<tbody>
-					<?php 
-					$counter = 1;
-					while ($query->have_posts()) {
-						$query->the_post();
-
-						// Get custom field value
-						$price = get_post_meta(get_the_ID(), '_book_price', true);
-						$rating = get_post_meta(get_the_ID(), '_book_start_rating', true);
-
-						// Get taxonomy terms (replace 'your_taxonomy' with your actual taxonomy name)
-						$auhtors = wp_get_post_terms(get_the_ID(), 'author', array('fields' => 'names'));
-						$publishers = wp_get_post_terms(get_the_ID(), 'publisher', array('fields' => 'names'));
-
-						
-						echo '<tr>';
-								echo '<td scope="row">' .$counter. '</td>';
-								echo '<td><a href="' . get_permalink() . '">' . get_the_title() . '</a></td>';
-								echo '<td>$'.$price.'</td>';
-								echo '<td>';
-								if ($auhtors && !is_wp_error($auhtors)) {							
-									$author_names = array();				
-									foreach ($auhtors as $auhtor) {
-										$author_names[] = $auhtor;
-									}				
-									$author_string = implode(', ', $author_names);				
-									echo $author_string;							
-								}
-								echo '</td>';
-								echo '<td>';
-								if ($publishers && !is_wp_error($publishers)) {							
-									$term_names = array();				
-									foreach ($publishers as $publisher) {
-										$term_names[] = $publisher;
-									}				
-									$taxonomy_string = implode(', ', $term_names);				
-									echo $taxonomy_string;							
-								}
-								echo '</td>';
-								echo '<td>';
-									if(!empty($rating)){
-										for ($i = 1; $i <= $rating; $i++) {
-											echo '<span style="margin-right:5px;"><i class="fas fa-star"></i></span>';
-										}
-									}
-								echo '</td>';
-						echo '</tr>';
-						
-						// Increment the counter
-						$counter++;
-					} ?>
-						</tbody>
-					</table>
-					<?php	
-
-				} else {
-					echo '<p>No results found</p>';
-				}			
-				wp_die();
-
+			//condition for 1 input box
+			if(!empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'     => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'             => $book_name,
+					'post_status' 	=> 'publish',
+				);
 			}
-        }else {
-            echo '<p>No results found</p>';
-			wp_die();
-        }
 
+			if(empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'     => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' 	=> 'publish',
+					'tax_query'     => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name', // Change field as needed (name, slug, term_id)
+							'terms'    => $book_author,
+						),
+					),
+				);
+			}
+
+			if(empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name', // Change field as needed (name, slug, term_id)
+							'terms'    => $book_publisher,
+						),
+					),
+				);
+			}
+
+			if(empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'meta_query'     => array(
+						array(
+							'key'   => '_book_start_rating',
+							'value' => $book_rating,
+						),
+					),
+				);
+			}
+
+			if(empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', // Replace 'field_name' with the actual custom field key
+							'value' => array( $min_price, $book_price ), // Set the minimum and maximum values
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),					
+					),
+				);
+			}
+
+			//condition for 2 input box
+			if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name', // Change field as needed (name, slug, term_id)
+							'terms'    => $book_author,
+						),
+					),
+				);
+			}
+
+			if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name', // Change field as needed (name, slug, term_id)
+							'terms'    => $book_publisher,
+						),
+					),
+				);
+			}
+
+			if(!empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'meta_query'     => array(
+						array(
+							'key'   => '_book_start_rating',
+							'value' => $book_rating,
+						),
+					),
+				);
+			}
+
+			if(!empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+					),
+				);
+			}
+			
+			//condition for 3 input box
+			if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						'relation' => 'AND',
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+				);
+				
+			}
+
+			if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key'   => '_book_start_rating',
+							'value' => $book_rating,
+						),
+					),
+				);			
+			}
+
+			if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+					),
+				);			
+			}
+
+			//condition for 4 input box
+			if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						'relation' => 'AND',
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key'   => '_book_start_rating',
+							'value' => $book_rating,
+						),
+					),
+				);
+				
+			}
+
+			if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						'relation' => 'AND',
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+					),
+				);
+				
+			}
+
+			//condition for 5 input box
+			if(!empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						'relation' => 'AND',
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+					),
+				);
+				
+			}
+
+			//condition for 6 input box
+			if(empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+					),
+				);			
+			}
+
+			if(empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+					),
+				);
+				
+			}
+
+			if(empty($book_name) && !empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+					),
+				);			
+			}
+
+			if(!empty($book_name) && empty($book_author) && empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+					),
+				);			
+			}
+
+			//condition for 7 input box
+			if(empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+					),
+				);
+				
+			}
+
+			if(empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+					),
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+					),
+				);
+				
+			}
+
+			if(!empty($book_name) && empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+					),
+				);
+				
+			}
+
+			//condition for 8 input box
+			if(empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						'relation' => 'AND',
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+					),
+				);
+				
+			}
+			
+			//condition for 9 input box
+			if(empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),					
+					),
+				);
+				
+			}
+
+			if(empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),					
+					),
+				);
+				
+			}
+
+			//condition for 10 input box
+			if(empty($book_name) && !empty($book_author) && !empty($book_publisher) && empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						'relation' => 'AND',
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+				);
+				
+			}
+
+			// //condition for 11 input box
+			if(empty($book_name) && !empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						'relation' => 'AND',
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+						
+					),
+				);			
+			}
+
+			if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+						
+					),
+				);
+				
+			}
+			
+			//condition for 12 input box
+			if(!empty($book_name) && !empty($book_author) && empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'author',
+							'field'    => 'name',
+							'terms'    => $book_author,
+						),
+					),
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						
+					),
+				);
+				
+			}
+
+			if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						
+					),
+				);
+				
+			}
+
+			if(!empty($book_name) && empty($book_author) && !empty($book_publisher) && !empty($book_rating) && !empty($book_price)){
+				$args = array(
+					'post_type'      => 'book',
+					'posts_per_page'=> 2,
+					'paged' 		=> $page,
+					's'              => $book_name,
+					'post_status' => 'publish',
+					'tax_query'      => array(
+						array(
+							'taxonomy' => 'publisher',
+							'field'    => 'name',
+							'terms'    => $book_publisher,
+						),
+					),
+					'meta_query'     => array(
+						'relation' => 'AND',
+						array(
+							'key'     => '_book_start_rating',
+							'value'   => $book_rating,
+						),
+						array(
+							'key' => '_book_price', 
+							'value' => array( $min_price, $book_price ),
+							'type' => 'NUMERIC',
+							'compare' => 'BETWEEN',
+						),
+						
+					),
+				);
+				
+			}
+		}else {
+			echo "No books found";
+		}
+
+		// print_r($args);
+
+		$query = new WP_Query($args);
+
+		if ($query->have_posts()) { ?>
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th scope="col">#</th>
+						<th scope="col">Title</th>
+						<th scope="col">Price</th>
+						<th scope="col">Author</th>
+						<th scope="col">Publisher</th>
+						<th scope="col">Rating</th>
+					</tr>
+				</thead>
+				<tbody>
+			<?php 
+			$counter = 1;
+			while ($query->have_posts()) {
+				$query->the_post();
+
+				// Get custom field value
+				$price = get_post_meta(get_the_ID(), '_book_price', true);
+				$rating = get_post_meta(get_the_ID(), '_book_start_rating', true);
+
+				// Get taxonomy terms (replace 'your_taxonomy' with your actual taxonomy name)
+				$auhtors = wp_get_post_terms(get_the_ID(), 'author', array('fields' => 'names'));
+				$publishers = wp_get_post_terms(get_the_ID(), 'publisher', array('fields' => 'names'));
+
+				
+				echo '<tr>';
+						echo '<td scope="row">' .$counter. '</td>';
+						echo '<td><a href="' . get_permalink() . '">' . get_the_title() . '</a></td>';
+						echo '<td>$'.$price.'</td>';
+						echo '<td>';
+						if ($auhtors && !is_wp_error($auhtors)) {							
+							$author_names = array();				
+							foreach ($auhtors as $auhtor) {
+								$author_names[] = $auhtor;
+							}				
+							$author_string = implode(', ', $author_names);				
+							echo $author_string;							
+						}
+						echo '</td>';
+						echo '<td>';
+						if ($publishers && !is_wp_error($publishers)) {							
+							$term_names = array();				
+							foreach ($publishers as $publisher) {
+								$term_names[] = $publisher;
+							}				
+							$taxonomy_string = implode(', ', $term_names);				
+							echo $taxonomy_string;							
+						}
+						echo '</td>';
+						echo '<td>';
+							if(!empty($rating)){
+								for ($i = 1; $i <= $rating; $i++) {
+									echo '<span style="margin-right:5px;"><i class="fas fa-star"></i></span>';
+								}
+							}
+						echo '</td>';
+				echo '</tr>';
+				
+				// Increment the counter
+				$counter++;
+			} ?>
+				</tbody>
+			</table>
+			<?php	
+
+		} else {
+			echo '<p>No results found</p>';
+		}
+			
+		// Number pagination
+		$total_pages = $query->max_num_pages;
+	
+		if ($total_pages > 1) {
+			echo '<div class="pagination-'.$pagination.'">';
+			if ($page > 1) {
+				echo '<a href="#" data-page="' . ($page - 1) . '">Previous</a>';
+			}
+	
+			for ($i = 1; $i <= $total_pages; $i++) {
+				$class = ($i == $page) ? 'active' : '';
+				echo '<a href="#" data-page="' . $i . '" class="' . $class . '">' . $i . '</a>';
+			}
+	
+			if ($page < $total_pages) {
+				echo '<a href="#" data-page="' . ($page + 1) . '">Next</a>';
+			}
+	
+			echo '</div>';
+		}
+	
+		wp_die();
 
 		
 	}

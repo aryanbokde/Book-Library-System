@@ -24,39 +24,79 @@ jQuery(document).ready(function ($) {
 
 
 jQuery(document).ready(function ($) {
+    
+    var ajaxurl = ajax_object.ajax_url; // Replace with the actual AJAX URL
 
-    $.ajax({
-        url: ajax_object.ajax_url,
-        type: 'GET',
-        data: {
-            action: 'bls_book_search',
-        },
-        success: function (response) {
-            $('#book-search-results').html(response);
-        },
+    function defaultloadPosts(page) {
+        $.ajax({
+            url: ajaxurl,
+            type: 'GET',
+            data: {
+                action: 'bls_book_search',
+                form_data : page,
+            },
+            success: function(response) {
+                $('#book-search-results').html(response);
+                updatePaginationDefault(page);
+            }
+        });
+    }
+
+    function updatePaginationDefault(currentPage) {
+        $('.pagination-get-request a').removeClass('active');
+        $('.pagination-get-request a[data-page="' + currentPage + '"]').addClass('active');
+    }
+
+    $(document).on('click', '.pagination-get-request a', function(e) {
+        e.preventDefault();
+        var page = $(this).data('page');
+        defaultloadPosts(page);
     });
 
-    $('#book-search-form').submit(function (e) {
 
+    defaultloadPosts(1); // Load initial posts
+
+
+    $('#book-search-form').submit(function (e) {
 		e.preventDefault();
-		var formData = $(this).serialize();
-		
+		loadPosts(1);
+    });
+
+
+    function loadPosts(page) {
+
+        var formData = $('#book-search-form').serialize();
+		// Add custom value
+        formData += '&page=' + page;
+        console.log(formData);
         $.ajax({
-            type: 'post',
-            url: ajax_object.ajax_url,
+            url: ajaxurl,
+            type: 'POST',
             data: {
                 action: 'bls_book_search',
                 form_data: formData,
             },
-            success: function (response) {
+            success: function(response) {
                 $('#book-search-results').html(response);
-            },
+                updatePagination(page);
+            }
         });
 
-        return false;
+    }
+
+    function updatePagination(currentPage) {
+        $('.pagination-post-request a').removeClass('active');
+        $('.pagination-post-request a[data-page="' + currentPage + '"]').addClass('active');
+    }
+
+    $(document).on('click', '.pagination-post-request a', function(e) {
+        e.preventDefault();
+        var page = $(this).data('page');
+        loadPosts(page);
     });
 
 }); 
+
 
 
 
