@@ -1019,7 +1019,7 @@ class Book_Library_System_Public {
 		$total_pages = $query->max_num_pages;
 	
 		if ($total_pages > 1) {
-			echo '<div class="pagination-'.$pagination.'">';
+			echo '<div id="pagination" class="pagination-'.$pagination.'">';
 			if ($page > 1) {
 				echo '<a href="#" data-page="' . ($page - 1) . '">Previous</a>';
 			}
